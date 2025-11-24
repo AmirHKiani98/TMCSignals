@@ -12,19 +12,21 @@ const backendPath = is.dev
   : join(process.resourcesPath, 'backend')
 
 const managePyPath = join(backendPath, 'manage.py')
-const venvPython = join(__dirname, '../../../.venv/Scripts/python.exe')
 
 let backendProcess: ReturnType<typeof spawn> | null = null
 
 function startBackend(): void {
-  // Use venv python if it exists, otherwise fall back to system python
-  const pythonCmd = is.dev ? venvPython : 'python'
+  // In development, try to use venv python, otherwise fall back to system python
+  const pythonCmd = is.dev ? 'python' : 'python'
   
   console.log(`Starting Django backend from: ${managePyPath}`)
+  console.log(`Using Python command: ${pythonCmd}`)
+  console.log(`Backend working directory: ${backendPath}`)
   
-  backendProcess = spawn(pythonCmd, [managePyPath, 'runserver', '127.0.0.1:8811'], {
+  // Use --noreload to avoid StatReloader threading issues when spawned from Electron
+  backendProcess = spawn(pythonCmd, [managePyPath, 'runserver', '127.0.0.1:8811', '--noreload'], {
     cwd: backendPath,
-    stdio: 'inherit',
+    stdio: ['ignore', 'pipe', 'pipe'], // Capture stdout/stderr instead of inherit
     shell: true,
     env: {
       ...process.env,
@@ -32,12 +34,32 @@ function startBackend(): void {
     }
   })
 
+  // Log backend output
+  if (backendProcess.stdout) {
+    backendProcess.stdout.on('data', (data) => {
+      console.log(`[Django] ${data.toString().trim()}`)
+    })
+  }
+
+  if (backendProcess.stderr) {
+    backendProcess.stderr.on('data', (data) => {
+      console.error(`[Django Error] ${data.toString().trim()}`)
+    })
+  }
+
   backendProcess.on('error', (err) => {
     console.error('Failed to start backend process:', err)
+    console.error('Make sure Python and Django are installed')
   })
 
   backendProcess.on('exit', (code) => {
     console.log(`Backend process exited with code ${code}`)
+    if (code !== 0 && code !== null) {
+      console.error('Backend exited with error. Check that:')
+      console.error('1. Python is in PATH')
+      console.error('2. Django dependencies are installed (pip install -r requirements.txt)')
+      console.error('3. Port 8811 is not already in use')
+    }
   })
 }
 
