@@ -9,9 +9,9 @@ from django.views.decorators.csrf import csrf_exempt
 def get_intersections(request):
     file_path = os.path.join(os.path.dirname(os.path.dirname(__file__)),
             'resources',
-            'intersections.csv'
+            'compelete_intersections.csv'
             )
-    
+    print(file_path)
     json_string = dataframe_to_json(file_path)
     # Parse the JSON string back to Python objects
     data = json.loads(json_string)

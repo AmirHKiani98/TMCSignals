@@ -5,12 +5,13 @@ def dataframe_to_json(intersections_csv_path: str) -> str:
     Convert a CSV string of intersections into a JSON string.
     Args:
         intersections_csv_path (str): Path to the CSV file containing intersection data.
-        the files columns are Name,long,lat
+        the files columns are Signal ID,Corridor from signal list,Intersection Name,Group,Device DNS,Vendor,IP Address,Sub Mask,Gateway,IP not by 1,Longitude,Latitude
     Returns:
         str: JSON string representation of the intersections data.
     """
     df = pd.read_csv(intersections_csv_path)
-    return df.to_json(orient='records')
+    df_unique_ids = df.drop_duplicates(subset=['Signal ID'])
+    return df_unique_ids.to_json(orient='records')
 
 
 

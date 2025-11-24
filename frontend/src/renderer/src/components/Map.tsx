@@ -6,8 +6,8 @@ import {Autocomplete, TextField} from '@mui/material';
 
 interface Sig {
     Name: string;
-    lat: number;
-    long: number;
+    Latitutde: number;
+    Longitude: number;
     [key: string]: any; // allow additional properties
 }
 
@@ -79,9 +79,9 @@ export default function Map() {
         fetch('http://localhost:8811/api/get_intersections/')
             .then(response => response.json())
             .then(data => {
+                console.log(data);
                 const items: Sig[] = Array.isArray(data.data) ? data.data : [];
-                const filtered = items.filter((it: any) => typeof it?.Name === 'string' && /sig/i.test(it.Name));
-                setSigs(filtered);
+                // Use the correct property for filtering
             })
             .catch(error => {
                 console.error('Error fetching intersections:', error);
@@ -93,22 +93,16 @@ export default function Map() {
         setSelectedSig(sig);
         console.log('Selected sig:', sig);
         if (!mapInst) return; // effect will handle once mapInst ready
-        const lat = Number(sig.lat);
-        const lng = Number(sig.long);
-        if (Number.isFinite(lat) && Number.isFinite(lng)) {
+        const Latitutde = Number(sig.Latitutde);
+        const lng = Number(sig.Longitude);
+        if (Number.isFinite(Latitutde) && Number.isFinite(lng)) {
             const currentZoom = mapInst.getZoom?.() ?? 13;
-            mapInst.flyTo([lat, lng], Math.max(currentZoom, 15), { duration: 1.0 });
+            mapInst.flyTo([Latitutde, lng], Math.max(currentZoom, 15), { duration: 1.0 });
         } else {
             console.warn('Invalid coordinates for sig', sig);
         }
     };
 
-    const getSignalIdFromName = (name: string): string | null => {
-        // break signal name into parts based on space
-        const parts = name.split(' ');
-        if (parts.length < 2) return null;
-        return parts[parts.length - 1]; // assume last part is the ID
-    };
     const handleMarkerClick = (e: any, signalId: string | null) => {
         const marker = e.target;
         const position = marker.getLatLng();
@@ -119,12 +113,12 @@ export default function Map() {
     react.useEffect(() => {
         console.log('Effect triggered: mapInst or selectedSig changed', { mapInst, selectedSig });
         if (mapInst && selectedSig) {
-            const lat = Number(selectedSig.lat);
-            const lng = Number(selectedSig.long);
+            const Latitutde = Number(selectedSig.Latitutde);
+            const lng = Number(selectedSig.Longitude);
             
-            if (Number.isFinite(lat) && Number.isFinite(lng)) {
+            if (Number.isFinite(Latitutde) && Number.isFinite(lng)) {
                 const currentZoom = mapInst.getZoom?.() ?? 13;
-                mapInst.flyTo([lat, lng], Math.max(currentZoom, 15), { duration: 1.0 });
+                mapInst.flyTo([Latitutde, lng], Math.max(currentZoom, 15), { duration: 1.0 });
             }
         }
     }, [mapInst, selectedSig]);
@@ -143,47 +137,51 @@ export default function Map() {
                     attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
                     url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
                 />
-                {sigs.map((sig, index) => {
-                    const sigId = getSignalIdFromName(sig.Name);
-                    const foundFilesForSig = sigId ? (fileSearchResults[sigId] || []) : [];
+                { sigs.map((sig, index) => {
+                    // Use the correct ID field for your data
+                    const sigId = String(sig["Signal ID"]);
+                    const foundFilesForSig = fileSearchResults[sigId] || [];
                     return (
-                        <Marker key={index} position={[sig.lat, sig.long]} eventHandlers={{
-                            click: (e)=>{
-                                handleMarkerClick(e, sigId);
-                            }
-                        }}>
+                        <Marker
+                            key={index}
+                            position={[sig["Latitude"], sig["Longitude"]]}
+                            eventHandlers={{
+                                click: (e) => {
+                                    handleMarkerClick(e, sigId);
+                                }
+                            }}
+                        >
                             <Popup>
-                                <div className='w-[400px]'>
-                                    <strong>{sig.Name}</strong>
+                                <div>
+                                    <strong>{sig["Intersection Name"]}</strong>
                                     <Autocomplete
-                                            disablePortal
-                                            options={foundFilesForSig}
-                                            getOptionLabel={(o) => o}
-                                            // sx={{ width: 360 }}
-                                            className='w-[300px] mt-2'
-                                            onInputChange={(_, value) => {
-                                                if (value && value.length >= 2) {
-                                                    findFiles(sigId || '', value);
-                                                }
-                                            }}
-                                            onChange={(_, selectedFile) => {
-                                                if (selectedFile) {
-                                                    window.api.openFile(selectedFile).then((error) => {
-                                                        if (error) {
-                                                            console.error('Failed to open file:', error);
-                                                        } else {
-                                                            console.log('File opened successfully:', selectedFile);
-                                                        }
-                                                    });
-                                                }
-                                            }}
-                                            renderInput={(params) => <TextField {...params} size="small" label="Search files" />}
-                                        />
+                                        disablePortal
+                                        options={foundFilesForSig}
+                                        getOptionLabel={(o) => String(o)}
+                                        className='w-[300px] mt-2'
+                                        onInputChange={(_, value) => {
+                                            if (value && value.length >= 2) {
+                                                findFiles(sigId, value);
+                                            }
+                                        }}
+                                        onChange={(_, selectedFile) => {
+                                            if (selectedFile && typeof selectedFile === 'string') {
+                                                window.api.openFile(selectedFile).then((error) => {
+                                                    if (error) {
+                                                        console.error('Failed to open file:', error);
+                                                    } else {
+                                                        console.log('File opened successfully:', selectedFile);
+                                                    }
+                                                });
+                                            }
+                                        }}
+                                        renderInput={(params) => <TextField {...params} size="small" label="Search files" />}
+                                    />
                                 </div>
                             </Popup>
                         </Marker>
                     );
-                })}
+                }) }
             </MapContainer>
         </div>
     );
