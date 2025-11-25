@@ -30,7 +30,11 @@ function TitleOverlay({ sigs, onSelect }: { sigs: Sig[]; onSelect: (sig: Sig) =>
             <Autocomplete
                 disablePortal
                 options={sigs}
-                getOptionLabel={(o) => o.Name}
+                getOptionLabel={(o) =>
+                    typeof o === 'string'
+                        ? o
+                        : (o["Intersection Name"] || o.Name || String(o["Signal ID"]) || "")
+                }
                 sx={{ width: 360 }}
                 onChange={(_, value) => value && onSelect(value)}
                 renderInput={(params) => <TextField {...params} size="small" label="Search signals" />}
@@ -81,7 +85,9 @@ export default function Map() {
             .then(data => {
                 console.log(data);
                 const items: Sig[] = Array.isArray(data.data) ? data.data : [];
-                // Use the correct property for filtering
+                // filter those ones that have lattitude and longitude defined
+                const filtered = items.filter((it: any) => it.Latitude != null && it.Longitude != null && !isNaN(Number(it.Latitude)) && !isNaN(Number(it.Longitude)));
+                setSigs(filtered)
             })
             .catch(error => {
                 console.error('Error fetching intersections:', error);
@@ -93,10 +99,10 @@ export default function Map() {
         setSelectedSig(sig);
         console.log('Selected sig:', sig);
         if (!mapInst) return; // effect will handle once mapInst ready
-        const Latitutde = Number(sig.Latitutde);
+        const Latitutde = Number(sig.Latitude);
         const lng = Number(sig.Longitude);
         if (Number.isFinite(Latitutde) && Number.isFinite(lng)) {
-            const currentZoom = mapInst.getZoom?.() ?? 13;
+            const currentZoom = 15;
             mapInst.flyTo([Latitutde, lng], Math.max(currentZoom, 15), { duration: 1.0 });
         } else {
             console.warn('Invalid coordinates for sig', sig);
@@ -137,8 +143,11 @@ export default function Map() {
                     attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
                     url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
                 />
-                { sigs.map((sig, index) => {
-                    // Use the correct ID field for your data
+                { sigs.filter(sig => {
+                    const lat = Number(sig["Latitude"]);
+                    const lng = Number(sig["Longitude"]);
+                    return Number.isFinite(lat) && Number.isFinite(lng);
+                }).map((sig, index) => {
                     const sigId = String(sig["Signal ID"]);
                     const foundFilesForSig = fileSearchResults[sigId] || [];
                     return (
