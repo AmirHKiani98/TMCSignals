@@ -98,7 +98,7 @@ export default function Map() {
                     attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
                     url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
                 />
-                { sigs.filter(sig => {
+                {sigs.filter(sig => {
                     const lat = Number(sig["Latitude"]);
                     const lng = Number(sig["Longitude"]);
                     return Number.isFinite(lat) && Number.isFinite(lng);
@@ -115,51 +115,86 @@ export default function Map() {
                             }}
                         >
                             <Popup>
-                                <div>
+                                <div className='flex flex-col justify-center gap-5'>
                                     <strong>{sig["Intersection Name"]}</strong>
                                     {loading ? (
-                                        <CircularProgress />
+                                        <div className='w-full text-center'>
+                                            <CircularProgress />
+                                        </div>
                                     ) : (
                                         <div>
-                                            <strong>Signal timing files</strong>
-                                            <ul>
-                                                {fileSearchResults && Array.isArray(fileSearchResults["signal_timing"]) && fileSearchResults["signal_timing"].length > 0 ? (
-                                                    fileSearchResults["signal_timing"].map((filePath, idx) => (
-                                                        <li key={idx}>{filePath}</li>
-                                                    ))
-                                                ) : (
-                                                    <li>No signal timing files found.</li>
-                                                )}
-                                                {fileSearchResults && Array.isArray(fileSearchResults["fya"]) && fileSearchResults["fya"].length > 0 ? (
-                                                    <>
-                                                        <strong>FYA files</strong>
-                                                        {fileSearchResults["fya"].map((filePath, idx) => (
-                                                            <li key={idx}>{filePath}</li>
-                                                        ))}
-                                                    </>
-                                                ) : (
-                                                    <li>No FYA files found.</li>
-                                                )}
-                                                {fileSearchResults && Array.isArray(fileSearchResults["front_page_sheets"]) && fileSearchResults["front_page_sheets"].length > 0 ? (
-                                                    <>
-                                                        <strong>Front page sheets</strong>
-                                                        {fileSearchResults["front_page_sheets"].map((filePath, idx) => (
-                                                            <li key={idx}>{filePath}</li>
-                                                        ))}
-                                                    </>
-                                                ) : (
-                                                    <li>No front page sheets found.</li>
-                                                )}
-
+                                            <ul className='p-2.5'>
+                                                <strong>Signal timing files</strong>
+                                                <div className='p-2.5 flex flex-col gap-2.5'>
+                                                    {fileSearchResults && Array.isArray(fileSearchResults["signal_timing"]) && fileSearchResults["signal_timing"].length > 0 ? (
+                                                        fileSearchResults["signal_timing"].map((filePath, idx) => (
+                                                            <li key={idx}>
+                                                                <a
+                                                                    href="#"
+                                                                    onClick={e => {
+                                                                        e.preventDefault();
+                                                                        window.api.openFile(filePath);
+                                                                    }}
+                                                                    style={{ color: '#1976d2', textDecoration: 'underline', cursor: 'pointer' }}
+                                                                >
+                                                                    {filePath}
+                                                                </a>
+                                                            </li>
+                                                        ))
+                                                    ) : (
+                                                        <li>No signal timing files found.</li>
+                                                    )}
+                                                </div>
+                                                <strong>FYA files</strong>
+                                                <div className='p-2.5 flex flex-col gap-2.5'>
+                                                    {fileSearchResults && Array.isArray(fileSearchResults["fya"]) && fileSearchResults["fya"].length > 0 ? (
+                                                        fileSearchResults["fya"].map((filePath, idx) => (
+                                                            <li key={idx}>
+                                                                <a
+                                                                    href="#"
+                                                                    onClick={e => {
+                                                                        e.preventDefault();
+                                                                        window.api.openFile(filePath);
+                                                                    }}
+                                                                    style={{ color: '#1976d2', textDecoration: 'underline', cursor: 'pointer' }}
+                                                                >
+                                                                    {filePath}
+                                                                </a>
+                                                            </li>
+                                                        ))
+                                                    ) : (
+                                                        <li>No FYA files found.</li>
+                                                    )}
+                                                </div>
+                                                <strong>Front page sheets</strong>
+                                                <div className='p-2.5 flex flex-col gap-2.5'>
+                                                    {fileSearchResults && Array.isArray(fileSearchResults["front_page_sheets"]) && fileSearchResults["front_page_sheets"].length > 0 ? (
+                                                        fileSearchResults["front_page_sheets"].map((filePath, idx) => (
+                                                            <li key={idx}>
+                                                                <a
+                                                                    href="#"
+                                                                    onClick={e => {
+                                                                        e.preventDefault();
+                                                                        window.api.openFile(filePath);
+                                                                    }}
+                                                                    style={{ color: '#1976d2', textDecoration: 'underline', cursor: 'pointer' }}
+                                                                >
+                                                                    {filePath}
+                                                                </a>
+                                                            </li>
+                                                        ))
+                                                    ) : (
+                                                        <li>No front page sheets found.</li>
+                                                    )}
+                                                </div>
                                             </ul>
                                         </div>
                                     )}
-
                                 </div>
                             </Popup>
                         </Marker>
                     );
-                }) }
+                })}
             </MapContainer>
         </div>
     );
