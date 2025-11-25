@@ -1,7 +1,6 @@
 import pandas as pd
 import json
 import os
-from concurrent.futures import ThreadPoolExecutor
 def dataframe_to_json(intersections_csv_path: str) -> str:
     """
     Convert a CSV string of intersections into a JSON string.
@@ -68,27 +67,15 @@ def get_files(path, looking_for, recursive=True):
     Returns an empty list if no files are found.
     Uses ThreadPoolExecutor for concurrent directory walking.
     """
-    matches = []
+    looking_for = looking_for.lower()
+    stack = [path]
 
-    def search_dir(dir_path):
-        try:
-            for root, dirs, files in os.walk(dir_path):
-                for file in files:
-                    if looking_for in file:
-                        matches.append(os.path.join(root, file))
-                if not recursive:
-                    break
-        except Exception as e:
-            print(f"Error searching {dir_path}: {e}")
-
-    with ThreadPoolExecutor(max_workers=10) as executor:
-        # If not recursive, just search the top-level directory
-        if not recursive:
-            executor.submit(search_dir, path)
-        else:
-            # For recursive, submit each subdirectory as a separate task
-            for root, dirs, files in os.walk(path):
-                executor.submit(search_dir, root)
-                # Don't walk subdirs again
-                dirs.clear()
-    return matches
+    while stack:
+        current = stack.pop()
+        with os.scandir(current) as entries:
+            for entry in entries:
+                name = entry.name.lower()
+                if entry.is_file() and looking_for in name:
+                    yield entry.path
+                elif entry.is_dir():
+                    stack.append(entry.path)

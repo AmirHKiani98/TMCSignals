@@ -46,28 +46,33 @@ export default function Map() {
     };
 
     const handleMarkerClick = (e: any, signalId: string | null) => {
-        console.log('Marker clicked for signalId:', e);
         setLoading(true);
-        fetch('http://localhost:8811/api/find_file_live/', {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/x-www-form-urlencoded',
-        },
-        body: new URLSearchParams({
-            sig_id: signalId || '',
-        }),
-        })
-        .then(response => response.json())
-        .then(data => {
-            console.log('Files found for sigId', signalId, ':', data);
-            setFileSearchResults(data.data)
+        setFileSearchResults({ signal_timing: [], fya: [], front_page_sheets: [] });
+
+        const evtSource = new EventSource(`http://localhost:8811/api/stream_find_files/?sig_id=${signalId}`);
+
+        evtSource.onmessage = (event) => {
+            const data = JSON.parse(event.data);
+
+            // when search is completed
+            if (data.done) {
+                evtSource.close();
+                setLoading(false);
+                return;
+            }
+
+            // append a new file into the correct bucket
+            setFileSearchResults(prev => ({
+                ...prev,
+                [data.type]: [...(prev[data.type] || []), data.file]
+            }));
+        };
+
+        evtSource.onerror = () => {
+            console.error("SSE connection failed");
+            evtSource.close();
             setLoading(false);
-        })
-        .catch(error => {
-            console.error('Error fetching found files:', error);
-            setFileSearchResults({});
-            setLoading(false);
-        });
+        };
     }
 
     // If user selected before map ready, run once both available

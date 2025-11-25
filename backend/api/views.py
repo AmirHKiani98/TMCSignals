@@ -3,6 +3,8 @@ import json
 from django.http import JsonResponse
 from .utils import *
 from django.views.decorators.csrf import csrf_exempt
+from django.http import StreamingHttpResponse
+
 # Create your views here.
 
 @csrf_exempt
@@ -35,10 +37,24 @@ def find_file_view(request):
 
 @csrf_exempt
 def find_file_live_view(request):
-    if request.method == 'POST':
-        sig_id = request.POST.get('sig_id', '')
-        
-        data = find_files_live(sig_id)
-        return JsonResponse({"data": data, "message": "ok"}, safe=False)
-    
-    return JsonResponse({"message": "Method not allowed"}, status=405)
+    sig_id = request.GET.get("sig_id", "").lower()
+    base_dir = r"L:\TO_Traffic\TMC"
+
+    def event_stream():
+        yield "retry: 1000\n"  # auto reconnect
+
+        # search each folder type
+        search_folders = {
+            "front_page_sheets": r"001 - Front Page Sheets",
+            "signal_timing": r"002 - Signal Timing",
+            "fya": r"006 - FYA",
+        }
+
+        for key, folder_name in search_folders.items():
+            path = os.path.join(base_dir, folder_name)
+            for file_path in get_files(path, sig_id):
+                yield f"data: {json.dumps({'type': key, 'file': file_path})}\n\n"
+
+        yield "data: {\"done\": true}\n\n"
+
+    return StreamingHttpResponse(event_stream(), content_type="text/event-stream")
