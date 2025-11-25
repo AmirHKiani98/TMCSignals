@@ -2,82 +2,18 @@ import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet'
 import 'leaflet/dist/leaflet.css'
 import react from 'react'
 import { Map as LeafletMap } from 'leaflet'
-import {Autocomplete, TextField} from '@mui/material';
+import {TitleOverlay, Sig} from './TitleOverlay'
 
-interface Sig {
-    Name: string;
-    Latitutde: number;
-    Longitude: number;
-    [key: string]: any; // allow additional properties
-}
+import { CircularProgress } from '@mui/material';
 
-function TitleOverlay({ sigs, onSelect }: { sigs: Sig[]; onSelect: (sig: Sig) => void }) {
-    return (
-        <div style={{
-            position: 'absolute',
-            top: '40px',
-            left: '40px',
-            zIndex: 1000,
-            padding: '8px',
-            borderRadius: '6px',
-            width: '384px',
-            display: 'flex',
-            flexDirection: 'column',
-            gap: '8px',
-            background: 'rgba(255,255,255,0.95)',
-            pointerEvents: 'auto'
-        }}>
-            <Autocomplete
-                disablePortal
-                options={sigs}
-                getOptionLabel={(o) =>
-                    typeof o === 'string'
-                        ? o
-                        : (o["Intersection Name"] || o.Name || String(o["Signal ID"]) || "")
-                }
-                sx={{ width: 360 }}
-                onChange={(_, value) => value && onSelect(value)}
-                renderInput={(params) => <TextField {...params} size="small" label="Search signals" />}
-            />
-            <div style={{ fontSize: '12px', color: '#555' }}>
-                Showing {sigs.length} signal points. Select one to fly to location.
-            </div>
-        </div>
-    );
-}
+
 
 export default function Map() {
     const [sigs, setSigs] = react.useState<Sig[]>([]);
     const [mapInst, setMapInst] = react.useState<LeafletMap | null>(null);
     const [selectedSig, setSelectedSig] = react.useState<Sig | null>(null);
-
+    const [loading, setLoading] = react.useState<boolean>(false)
     const [fileSearchResults, setFileSearchResults] = react.useState<Record<string, string[]>>({});
-    
-    const findFiles = (sigId: string, lookingText: string) => {
-        fetch('http://localhost:8811/api/find_file/', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/x-www-form-urlencoded',
-            },
-            body: new URLSearchParams({
-                sig_id: sigId,
-                looking_text: lookingText,
-            }),
-        })
-        .then(response => response.json())
-        .then(data => {
-            console.log('Files found for sigId', sigId, ':', data);
-            if (data.found_files) {
-                setFileSearchResults(prev => ({ ...prev, [sigId]: data.found_files }));
-            } else {
-                setFileSearchResults(prev => ({ ...prev, [sigId]: [] }));
-            }
-        })
-        .catch(error => {
-            console.error('Error fetching found files:', error);
-            setFileSearchResults(prev => ({ ...prev, [sigId]: [] }));
-        });
-    };
 
     react.useEffect(() => {
         fetch('http://localhost:8811/api/get_intersections/')
@@ -110,9 +46,28 @@ export default function Map() {
     };
 
     const handleMarkerClick = (e: any, signalId: string | null) => {
-        const marker = e.target;
-        const position = marker.getLatLng();
-        console.log('Marker clicked at position:', position, 'with signal ID:', signalId);
+        console.log('Marker clicked for signalId:', e);
+        setLoading(true);
+        fetch('http://localhost:8811/api/find_file_live/', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/x-www-form-urlencoded',
+        },
+        body: new URLSearchParams({
+            sig_id: signalId || '',
+        }),
+        })
+        .then(response => response.json())
+        .then(data => {
+            console.log('Files found for sigId', signalId, ':', data);
+            setFileSearchResults(data.data)
+            setLoading(false);
+        })
+        .catch(error => {
+            console.error('Error fetching found files:', error);
+            setFileSearchResults({});
+            setLoading(false);
+        });
     }
 
     // If user selected before map ready, run once both available
@@ -149,7 +104,6 @@ export default function Map() {
                     return Number.isFinite(lat) && Number.isFinite(lng);
                 }).map((sig, index) => {
                     const sigId = String(sig["Signal ID"]);
-                    const foundFilesForSig = fileSearchResults[sigId] || [];
                     return (
                         <Marker
                             key={index}
@@ -163,29 +117,44 @@ export default function Map() {
                             <Popup>
                                 <div>
                                     <strong>{sig["Intersection Name"]}</strong>
-                                    <Autocomplete
-                                        disablePortal
-                                        options={foundFilesForSig}
-                                        getOptionLabel={(o) => String(o)}
-                                        className='w-[300px] mt-2'
-                                        onInputChange={(_, value) => {
-                                            if (value && value.length >= 2) {
-                                                findFiles(sigId, value);
-                                            }
-                                        }}
-                                        onChange={(_, selectedFile) => {
-                                            if (selectedFile && typeof selectedFile === 'string') {
-                                                window.api.openFile(selectedFile).then((error) => {
-                                                    if (error) {
-                                                        console.error('Failed to open file:', error);
-                                                    } else {
-                                                        console.log('File opened successfully:', selectedFile);
-                                                    }
-                                                });
-                                            }
-                                        }}
-                                        renderInput={(params) => <TextField {...params} size="small" label="Search files" />}
-                                    />
+                                    {loading ? (
+                                        <CircularProgress />
+                                    ) : (
+                                        <div>
+                                            <strong>Signal timing files</strong>
+                                            <ul>
+                                                {fileSearchResults && Array.isArray(fileSearchResults["signal_timing"]) && fileSearchResults["signal_timing"].length > 0 ? (
+                                                    fileSearchResults["signal_timing"].map((filePath, idx) => (
+                                                        <li key={idx}>{filePath}</li>
+                                                    ))
+                                                ) : (
+                                                    <li>No signal timing files found.</li>
+                                                )}
+                                                {fileSearchResults && Array.isArray(fileSearchResults["fya"]) && fileSearchResults["fya"].length > 0 ? (
+                                                    <>
+                                                        <strong>FYA files</strong>
+                                                        {fileSearchResults["fya"].map((filePath, idx) => (
+                                                            <li key={idx}>{filePath}</li>
+                                                        ))}
+                                                    </>
+                                                ) : (
+                                                    <li>No FYA files found.</li>
+                                                )}
+                                                {fileSearchResults && Array.isArray(fileSearchResults["front_page_sheets"]) && fileSearchResults["front_page_sheets"].length > 0 ? (
+                                                    <>
+                                                        <strong>Front page sheets</strong>
+                                                        {fileSearchResults["front_page_sheets"].map((filePath, idx) => (
+                                                            <li key={idx}>{filePath}</li>
+                                                        ))}
+                                                    </>
+                                                ) : (
+                                                    <li>No front page sheets found.</li>
+                                                )}
+
+                                            </ul>
+                                        </div>
+                                    )}
+
                                 </div>
                             </Popup>
                         </Marker>

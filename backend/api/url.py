@@ -1,5 +1,5 @@
 from django.urls import path
-from .views import find_file_view, get_intersections
+from .views import find_file_live_view, find_file_view, get_intersections
 
 app_name = "api"
 
@@ -9,4 +9,5 @@ app_name = "api"
 urlpatterns = [
     path("get_intersections/", get_intersections, name="get-intersections"),
     path("find_file/", find_file_view, name="find-file"),
+    path("find_file_live/", find_file_live_view, name="find-file-live"),
 ]

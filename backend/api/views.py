@@ -32,3 +32,13 @@ def find_file_view(request):
         return JsonResponse({"found_files": found_files, "message": "ok"}, safe=False)
     
     return JsonResponse({"message": "Method not allowed"}, status=405)
+
+@csrf_exempt
+def find_file_live_view(request):
+    if request.method == 'POST':
+        sig_id = request.POST.get('sig_id', '')
+        
+        data = find_files_live(sig_id)
+        return JsonResponse({"data": data, "message": "ok"}, safe=False)
+    
+    return JsonResponse({"message": "Method not allowed"}, status=405)
