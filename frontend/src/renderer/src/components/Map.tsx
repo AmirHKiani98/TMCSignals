@@ -49,30 +49,27 @@ export default function Map() {
         setLoading(true);
         setFileSearchResults({ signal_timing: [], fya: [], front_page_sheets: [] });
 
-        const evtSource = new EventSource(`http://localhost:8811/api/stream_find_files/${signalId}/`);
-
-        evtSource.onmessage = (event) => {
+        const ws = new WebSocket(`ws://localhost:8811/ws/find_file/${signalId}/`);
+        
+        ws.onmessage = (event) => {
             const data = JSON.parse(event.data);
-
-            // when search is completed
-            if (data.done) {
-                evtSource.close();
+            console.log('WebSocket message received:', data);
+            if (data.done){
+                ws.close();
                 setLoading(false);
                 return;
             }
-
-            // append a new file into the correct bucket
             setFileSearchResults(prev => ({
                 ...prev,
                 [data.type]: [...(prev[data.type] || []), data.file]
             }));
         };
-
-        evtSource.onerror = () => {
-            console.error("SSE connection failed");
-            evtSource.close();
+        ws.onerror = (event) => {
+            console.error('WebSocket error:', event);
             setLoading(false);
-        };
+            ws.close();
+        }
+
     }
 
     // If user selected before map ready, run once both available

@@ -40,26 +40,21 @@ def find_file_live_view(request, sig_id):
     sig_id = sig_id.lower()
     base_dir = r"L:\TO_Traffic\TMC"
 
-    search_folders = {
-        "front_page_sheets": r"001 - Front Page Sheets",
-        "signal_timing": r"002 - Signal Timing",
-        "fya": r"006 - FYA",
-    }
+    def event_stream():
+        yield "retry: 1000\n"  # auto reconnect
 
-    def generate_events():
-        # Send initial event so browser opens stream immediately
-        yield "event: ping\ndata: start\n\n"
+        # search each folder type
+        search_folders = {
+            "front_page_sheets": r"001 - Front Page Sheets",
+            "signal_timing": r"002 - Signal Timing",
+            "fya": r"006 - FYA",
+        }
 
         for key, folder_name in search_folders.items():
             path = os.path.join(base_dir, folder_name)
             for file_path in get_files(path, sig_id):
-                payload = {"type": key, "file": file_path}
-                # Correct SSE frame
-                yield f"data: {json.dumps(payload)}\n\n"
+                yield f"data: {json.dumps({'type': key, 'file': file_path})}\n\n"
 
         yield "data: {\"done\": true}\n\n"
 
-    response = StreamingHttpResponse(generate_events(), content_type="text/event-stream")
-    response["Cache-Control"] = "no-cache"
-    response["X-Accel-Buffering"] = "no"  # 🔥 VERY IMPORTANT for Nginx/gunicorn
-    return response
+    return StreamingHttpResponse(event_stream(), content_type="text/event-stream")
