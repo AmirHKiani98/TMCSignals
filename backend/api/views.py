@@ -36,8 +36,8 @@ def find_file_view(request):
     return JsonResponse({"message": "Method not allowed"}, status=405)
 
 @csrf_exempt
-def find_file_live_view(request):
-    sig_id = request.GET.get("sig_id", "").lower()
+def find_file_live_view(request, sig_id):
+    sig_id = sig_id.lower()
     base_dir = r"L:\TO_Traffic\TMC"
 
     def event_stream():

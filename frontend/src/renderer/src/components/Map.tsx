@@ -49,7 +49,7 @@ export default function Map() {
         setLoading(true);
         setFileSearchResults({ signal_timing: [], fya: [], front_page_sheets: [] });
 
-        const evtSource = new EventSource(`http://localhost:8811/api/stream_find_files/?sig_id=${signalId}`);
+        const evtSource = new EventSource(`http://localhost:8811/api/stream_find_files/${signalId}/`);
 
         evtSource.onmessage = (event) => {
             const data = JSON.parse(event.data);

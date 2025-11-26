@@ -10,4 +10,5 @@ urlpatterns = [
     path("get_intersections/", get_intersections, name="get-intersections"),
     path("find_file/", find_file_view, name="find-file"),
     path("find_file_live/", find_file_live_view, name="find-file-live"),
+    path("stream_find_files/<str:sig_id>/", find_file_live_view, name="stream-find-files"),
 ]
