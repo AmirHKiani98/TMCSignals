@@ -47,7 +47,7 @@ export default function Map() {
 
     const handleMarkerClick = (e: any, signalId: string | null) => {
         setLoading(true);
-        setFileSearchResults({ signal_timing: [], fya: [], front_page_sheets: [] });
+        setFileSearchResults({});
 
         const ws = new WebSocket(`ws://localhost:8811/ws/find_file/${signalId}/`);
         
@@ -59,8 +59,7 @@ export default function Map() {
                 setLoading(false);
                 return;
             }
-            console.log('Received data via WebSocket:', data);
-            setLoading(false);
+            
             setFileSearchResults(prev => ({
                 ...prev,
                 [data.type]: [...(prev[data.type] || []), data.file]
@@ -119,79 +118,39 @@ export default function Map() {
                             }}
                         >
                             <Popup>
-                                <div className='flex flex-col justify-center gap-5'>
+                                <div className='flex flex-col justify-center gap-1'>
                                     <strong>{sig["Intersection Name"]}</strong>
-                                    {loading ? (
+                                    <div>
+                                        <ul className='p-2.5'>
+                                            {fileSearchResults &&
+                                                Object.entries(fileSearchResults).map(([key, files]) => (
+                                                    <div key={key} className="p-2.5">
+                                                        <strong>{key}</strong>
+                                                        <ul>
+                                                            {files.map((filePath, idx) => (
+                                                                <li key={idx}>
+                                                                    <a
+                                                                        href="#"
+                                                                        onClick={e => {
+                                                                            e.preventDefault();
+                                                                            window.api.openFile(filePath);
+                                                                        }}
+                                                                        style={{ color: '#1976d2', textDecoration: 'underline', cursor: 'pointer' }}
+                                                                    >
+                                                                        {filePath.replace(/^L:\\TO_Traffic\\TMC\\/i, '')}
+                                                                    </a>
+                                                                </li>
+                                                            ))}
+                                                        </ul>
+                                                    </div>
+                                                ))
+                                            }
+                                        </ul>
+                                    </div>
+                                    
+                                    {loading && (
                                         <div className='w-full text-center'>
                                             <CircularProgress />
-                                        </div>
-                                    ) : (
-                                        <div>
-                                            <ul className='p-2.5'>
-                                                <strong>Signal timing files</strong>
-                                                <div className='p-2.5 flex flex-col gap-2.5'>
-                                                    {fileSearchResults && Array.isArray(fileSearchResults["signal_timing"]) && fileSearchResults["signal_timing"].length > 0 ? (
-                                                        fileSearchResults["signal_timing"].map((filePath, idx) => (
-                                                            <li key={idx}>
-                                                                <a
-                                                                    href="#"
-                                                                    onClick={e => {
-                                                                        e.preventDefault();
-                                                                        window.api.openFile(filePath);
-                                                                    }}
-                                                                    style={{ color: '#1976d2', textDecoration: 'underline', cursor: 'pointer' }}
-                                                                >
-                                                                    {filePath}
-                                                                </a>
-                                                            </li>
-                                                        ))
-                                                    ) : (
-                                                        <li>No signal timing files found.</li>
-                                                    )}
-                                                </div>
-                                                <strong>FYA files</strong>
-                                                <div className='p-2.5 flex flex-col gap-2.5'>
-                                                    {fileSearchResults && Array.isArray(fileSearchResults["fya"]) && fileSearchResults["fya"].length > 0 ? (
-                                                        fileSearchResults["fya"].map((filePath, idx) => (
-                                                            <li key={idx}>
-                                                                <a
-                                                                    href="#"
-                                                                    onClick={e => {
-                                                                        e.preventDefault();
-                                                                        window.api.openFile(filePath);
-                                                                    }}
-                                                                    style={{ color: '#1976d2', textDecoration: 'underline', cursor: 'pointer' }}
-                                                                >
-                                                                    {filePath}
-                                                                </a>
-                                                            </li>
-                                                        ))
-                                                    ) : (
-                                                        <li>No FYA files found.</li>
-                                                    )}
-                                                </div>
-                                                <strong>Front page sheets</strong>
-                                                <div className='p-2.5 flex flex-col gap-2.5'>
-                                                    {fileSearchResults && Array.isArray(fileSearchResults["front_page_sheets"]) && fileSearchResults["front_page_sheets"].length > 0 ? (
-                                                        fileSearchResults["front_page_sheets"].map((filePath, idx) => (
-                                                            <li key={idx}>
-                                                                <a
-                                                                    href="#"
-                                                                    onClick={e => {
-                                                                        e.preventDefault();
-                                                                        window.api.openFile(filePath);
-                                                                    }}
-                                                                    style={{ color: '#1976d2', textDecoration: 'underline', cursor: 'pointer' }}
-                                                                >
-                                                                    {filePath}
-                                                                </a>
-                                                            </li>
-                                                        ))
-                                                    ) : (
-                                                        <li>No front page sheets found.</li>
-                                                    )}
-                                                </div>
-                                            </ul>
                                         </div>
                                     )}
                                 </div>
