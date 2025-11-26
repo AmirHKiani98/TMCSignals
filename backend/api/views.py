@@ -4,7 +4,7 @@ from django.http import JsonResponse
 from .utils import *
 from django.views.decorators.csrf import csrf_exempt
 from django.http import StreamingHttpResponse
-
+from threading import Thread
 # Create your views here.
 
 @csrf_exempt
@@ -38,23 +38,13 @@ def find_file_view(request):
 @csrf_exempt
 def find_file_live_view(request, sig_id):
     sig_id = sig_id.lower()
-    base_dir = r"L:\TO_Traffic\TMC"
+    directory = r"L:\TO_Traffic\TMC"
+    search_folder_path = os.path.join(directory, "TMCGIS/search_folders.json")
+    with open(search_folder_path, 'r') as f:
+        search_folders = json.load(f)
+    
+    # Thread on find_files_live
+    thread = Thread(target=find_files_live, args=(sig_id, search_folders))
+    thread.start()
 
-    def event_stream():
-        yield "retry: 1000\n"  # auto reconnect
-
-        # search each folder type
-        search_folders = {
-            "front_page_sheets": r"001 - Front Page Sheets",
-            "signal_timing": r"002 - Signal Timing",
-            "fya": r"006 - FYA",
-        }
-
-        for key, folder_name in search_folders.items():
-            path = os.path.join(base_dir, folder_name)
-            for file_path in get_files(path, sig_id):
-                yield f"data: {json.dumps({'type': key, 'file': file_path})}\n\n"
-
-        yield "data: {\"done\": true}\n\n"
-
-    return StreamingHttpResponse(event_stream(), content_type="text/event-stream")
+    return JsonResponse({"message": "File search started"}, safe=False)

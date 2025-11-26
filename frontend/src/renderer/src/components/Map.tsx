@@ -53,12 +53,14 @@ export default function Map() {
         
         ws.onmessage = (event) => {
             const data = JSON.parse(event.data);
-            console.log('WebSocket message received:', data);
+            
             if (data.done){
                 ws.close();
                 setLoading(false);
                 return;
             }
+            console.log('Received data via WebSocket:', data);
+            setLoading(false);
             setFileSearchResults(prev => ({
                 ...prev,
                 [data.type]: [...(prev[data.type] || []), data.file]

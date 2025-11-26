@@ -2,29 +2,29 @@ import json
 import os
 from channels.generic.websocket import AsyncWebsocketConsumer
 from .utils import get_files
+from asgiref.sync import sync_to_async
 
 
 class FileFindConsumer(AsyncWebsocketConsumer):
     async def connect(self):
-        self.sig_id = self.scope['url_route']['kwargs']['sig_id'].lower()
-        self.base_dir = r"L:\TO_Traffic\TMC"
-
         await self.accept()
-
-        # search each folder type
-        search_folders = {
-            "front_page_sheets": r"001 - Front Page Sheets",
-            "signal_timing": r"002 - Signal Timing",
-            "fya": r"006 - FYA",
-        }
+        base_dir = r"L:\TO_Traffic\TMC"
+        with open(os.path.join(base_dir, "TMCGIS/search_folders.json"), 'r') as f:
+            search_folders = json.load(f)
+        sig_id = self.scope['url_route']['kwargs']['sig_id']
 
         for key, folder_name in search_folders.items():
-            path = os.path.join(self.base_dir, folder_name)
-            for file_path in get_files(path, self.sig_id):
+            path = os.path.join(base_dir, folder_name)
+            # Use sync_to_async to run the generator in a thread
+            async for file_path in self._stream_files(path, sig_id):
                 await self.send(text_data=json.dumps({
                     'type': key,
                     'file': file_path
                 }))
-
         await self.send(text_data=json.dumps({"done": True}))
         await self.close()
+
+    async def _stream_files(self, path, looking_for):
+        # This helper wraps the generator so it yields in a thread
+        for file_path in await sync_to_async(list, thread_sensitive=False)(get_files(path, looking_for)):
+            yield file_path

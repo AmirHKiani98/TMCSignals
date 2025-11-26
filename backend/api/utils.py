@@ -1,6 +1,9 @@
 import pandas as pd
 import json
 import os
+from asgiref.sync import async_to_sync
+from channels.layers import get_channel_layer
+
 def dataframe_to_json(intersections_csv_path: str) -> str:
     """
     Convert a CSV string of intersections into a JSON string.
@@ -38,7 +41,7 @@ def find_file(file_path, sig_id: str, looking_text: str) -> str:
     return to_return
 
 
-def find_files_live(sig_id: str) -> dict:
+def find_files_live(sig_id: str, search_folders) -> dict:
     """
     Mock function to simulate finding files based on signal ID.
     
@@ -50,14 +53,14 @@ def find_files_live(sig_id: str) -> dict:
     """
     # This is a mock implementation. Replace with actual logic as needed.
     directory = r"L:\TO_Traffic\TMC"
-    front_page_sheet_folder = "001 - Front Page Sheets"
-    signal_timing_folder = "002 - Signal Timing"
-    fya_folder = "006 - FYA"
     files_dict = {
-        "front_page_sheets": list(get_files(os.path.join(directory, front_page_sheet_folder), looking_for=sig_id)),
-        "signal_timing": list(get_files(os.path.join(directory, signal_timing_folder), looking_for=sig_id)),
-        "fya": list(get_files(os.path.join(directory, fya_folder), looking_for=sig_id)),
+        key: [] for key in search_folders.keys()
     }
+    for key, folder in search_folders.items():
+        folder_path = os.path.join(directory, folder)
+        files_dict[key] = list(get_files(folder_path, looking_for=sig_id))
+
+    
     return files_dict
 
 def get_files(path, looking_for, recursive=True):
@@ -69,7 +72,6 @@ def get_files(path, looking_for, recursive=True):
     """
     looking_for = looking_for.lower()
     stack = [path]
-
     while stack:
         current = stack.pop()
         with os.scandir(current) as entries:
