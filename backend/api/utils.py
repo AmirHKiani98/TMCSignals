@@ -1,8 +1,7 @@
 import pandas as pd
 import json
 import os
-from asgiref.sync import async_to_sync
-from channels.layers import get_channel_layer
+import requests
 
 def dataframe_to_json(intersections_csv_path: str) -> str:
     """
@@ -80,4 +79,70 @@ def get_files(path, looking_for, recursive=True):
                 if entry.is_file() and looking_for in name:
                     yield entry.path
                 elif entry.is_dir():
-                    stack.append(entry.path)
+                    # stack.append(entry.path)
+                    pass
+
+
+def get_snapshot(ip: str, str_format):
+    """
+    Generate a snapshot URL based on the provided IP, format, and quality.
+    
+    Args:
+        ip (str): The IP address of the device.
+        str_format (str): The format string to use for the URL.        
+    Returns:
+        str: The image will be returned
+    """
+    url = str_format.format(ip=ip)
+    try:
+        response = requests.get(url, timeout=2)
+        response.raise_for_status()
+        return response.content, True
+    except requests.RequestException as e:
+        return None, False
+
+
+
+def check_noise(image):
+    pass
+
+
+def check_all_intersections():
+    """
+    Check all intersections from the intersections CSV file and verify their snapshot URLs.
+    
+    Returns:
+        dict: A dictionary with signal IDs as keys and their snapshot URL status as values.
+    """
+    results = {}
+    intersections_csv_path = os.path.join(
+       r"L:\TO_Traffic\TMC",
+        'TMCGIS',
+        'compelete_intersections.csv'
+    )
+    df = pd.read_csv(intersections_csv_path)
+    df_unique_ids = df.drop_duplicates(subset=['Signal ID'])
+    
+    streams_api_path = r"L:\TO_Traffic\TMC\TMCGIS\streams_api.json"
+    with open(streams_api_path, 'r') as f:
+        streams_api = json.load(f)
+    
+    for _, row in df_unique_ids.iterrows():
+        sig_id = row['Signal ID']
+        ip = row['IP Address']
+        vendor = row['Vendor'].lower()
+        
+        for vendor_name, vendor_url_format in streams_api.items():
+
+            snapshot, status = get_snapshot(ip, vendor_url_format)
+            if status == True:
+                results[sig_id] = {
+                    "ip": ip,
+                    "vendor": vendor_name,
+                    "snapshot_url": vendor_url_format.format(ip=ip),
+                    "status": status
+                }
+                break
+    
+    return results
+
