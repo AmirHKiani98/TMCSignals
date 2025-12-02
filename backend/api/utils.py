@@ -83,7 +83,7 @@ def get_files(path, looking_for, recursive=True):
                     pass
 
 
-def get_snapshot(ip: str, str_format):
+def get_snapshot(ip: str, str_format=None):
     """
     Generate a snapshot URL based on the provided IP, format, and quality.
     
@@ -93,12 +93,30 @@ def get_snapshot(ip: str, str_format):
     Returns:
         str: The image will be returned
     """
-    url = str_format.format(ip=ip)
     try:
-        response = requests.get(url, timeout=2)
-        response.raise_for_status()
-        return response.content, True
-    except requests.RequestException as e:
+        if str_format is None:
+            streams_api_path = r"L:\TO_Traffic\TMC\TMCGIS\streams_api.json"
+            with open(streams_api_path, 'r') as f:
+                streams_api = json.load(f)
+            for vendor_name, vendor_url_format in streams_api.items():
+                url = vendor_url_format.format(ip=ip)
+                try:
+                    response = requests.get(url, timeout=2)
+                    response.raise_for_status()
+                    return response.content, True
+                except requests.RequestException as e:
+                    continue
+            return None, False
+        else:
+            url = str_format.format(ip=ip)
+            try:
+                response = requests.get(url, timeout=2)
+                response.raise_for_status()
+                return response.content, True
+            except requests.RequestException as e:
+                return None, False
+    except Exception as e:
+        print(f"Error in get_snapshot: {e}")
         return None, False
 
 

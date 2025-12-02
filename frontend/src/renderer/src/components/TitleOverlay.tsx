@@ -30,7 +30,7 @@ export function TitleOverlay({ sigs, onSelect }: { sigs: Sig[]; onSelect: (sig: 
                 getOptionLabel={(o) =>
                     typeof o === 'string'
                         ? o
-                        : (o["Intersection Name"] || o.Name || String(o["Signal ID"]) || "")
+                        : (String(o["Signal ID"]) || "")
                 }
                 sx={{ width: 360 }}
                 onChange={(_, value) => value && onSelect(value)}

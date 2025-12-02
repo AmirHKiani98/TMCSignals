@@ -14,7 +14,7 @@ export default function Map() {
     const [selectedSig, setSelectedSig] = react.useState<Sig | null>(null);
     const [loading, setLoading] = react.useState<boolean>(false)
     const [fileSearchResults, setFileSearchResults] = react.useState<Record<string, string[]>>({});
-
+    const [snapShotImage, setSnapShotImage] = react.useState<string | null>(null);
     react.useEffect(() => {
         fetch('http://localhost:8811/api/get_intersections/')
             .then(response => response.json())
@@ -45,7 +45,7 @@ export default function Map() {
         }
     };
 
-    const handleMarkerClick = (e: any, signalId: string | null) => {
+    const handleMarkerClick = (_e: any, signalId: string | null) => {
         setLoading(true);
         setFileSearchResults({});
 
@@ -70,6 +70,27 @@ export default function Map() {
             setLoading(false);
             ws.close();
         }
+        // Fetch snapshot image
+        fetch(`http://localhost:8811/api/get-snapshot/`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ sig_id: signalId })
+        })
+        .then(response => response.json())
+        .then(data => {
+            console.log('Snapshot data:', data);
+            if (data.snapshot) {
+                setSnapShotImage(data.snapshot);
+            } else {
+                setSnapShotImage(null);
+            }
+        })
+        .catch(error => {
+            console.error('Error fetching snapshot:', error);
+            setSnapShotImage(null);
+        });
 
     }
 
@@ -146,6 +167,14 @@ export default function Map() {
                                                 ))
                                             }
                                         </ul>
+                                        {snapShotImage &&
+                                            <div className='p-2.5'>
+                                                <strong>Snapshot</strong>
+                                                <div>
+                                                    <img src={snapShotImage} alt="Snapshot" style={{ maxWidth: '100%' }} />
+                                                </div>
+                                            </div>
+                                        }
                                     </div>
                                     
                                     {loading && (

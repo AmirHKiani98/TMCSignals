@@ -57,6 +57,7 @@ MIDDLEWARE = [
 # CORS settings
 CORS_ALLOWED_ORIGINS = [
     "http://localhost:5173",  # Vite dev server
+    "http://localhost:5174",  # Vite dev server (alternate port)
 ]
 
 CORS_ALLOW_CREDENTIALS = True
