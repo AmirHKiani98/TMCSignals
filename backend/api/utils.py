@@ -100,6 +100,7 @@ def get_snapshot(ip: str, str_format=None):
                 streams_api = json.load(f)
             for vendor_name, vendor_url_format in streams_api.items():
                 url = vendor_url_format.format(ip=ip)
+                print("Checking", url)
                 try:
                     response = requests.get(url, timeout=2)
                     response.raise_for_status()

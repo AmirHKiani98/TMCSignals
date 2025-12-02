@@ -64,58 +64,74 @@ def find_file_live_view(request, sig_id):
 
 @csrf_exempt
 def get_snapshot_view(request):
-    # Handle CORS preflight
-    if request.method == "OPTIONS":
-        response = HttpResponse()
-        response.status_code = 200
-        response["Access-Control-Allow-Origin"] = "*"
-        response["Access-Control-Allow-Methods"] = "GET, POST, OPTIONS"
-        response["Access-Control-Allow-Headers"] = "Content-Type"
-        response["Content-Length"] = "0"
-        response["Content-Type"] = "application/json"
-        return response
-    if request.method != "POST":
-        response = JsonResponse({"message": "Method not allowed"}, status=405)
-        response["Access-Control-Allow-Origin"] = "*"
-        response["Access-Control-Allow-Methods"] = "GET, POST, OPTIONS"
-        response["Access-Control-Allow-Headers"] = "Content-Type"
-        return response
+    try:
+        # Handle CORS preflight
+        if request.method == "OPTIONS":
+            response = HttpResponse()
+            response.status_code = 200
+            response["Access-Control-Allow-Origin"] = "*"
+            response["Access-Control-Allow-Methods"] = "GET, POST, OPTIONS"
+            response["Access-Control-Allow-Headers"] = "Content-Type"
+            response["Content-Length"] = "0"
+            response["Content-Type"] = "application/json"
+            return response
+        if request.method != "POST":
+            response = JsonResponse({"message": "Method not allowed"}, status=405)
+            response["Access-Control-Allow-Origin"] = "*"
+            response["Access-Control-Allow-Methods"] = "GET, POST, OPTIONS"
+            response["Access-Control-Allow-Headers"] = "Content-Type"
+            return response
 
-    # Support both form POST and JSON POST
-    sig = None
-    if request.content_type == 'application/json':
-        try:
-            body = json.loads(request.body.decode('utf-8'))
-            sig = body.get('sig_id', '').lower()
-        except Exception:
-            sig = ''
-    else:
-        sig = request.POST.get('sig_id', '').lower()
-    print(f"Received sig_id: {sig}")
-    directory = r"L:\TO_Traffic\TMC"
-    complete_intersection = os.path.join(directory, 'TMCGIS/compelete_intersections.csv')
-    df = pd.read_csv(complete_intersection)
-    ip_address = df.loc[df['Signal ID'].astype(str).str.lower() == sig, 'IP Address']
-    if ip_address.empty:
-        response = JsonResponse({"message": "Signal ID not found"}, status=404)
-        response["Access-Control-Allow-Origin"] = "*"
-        response["Access-Control-Allow-Methods"] = "GET, POS T, OPTIONS"
-        response["Access-Control-Allow-Headers"] = "Content-Type"
-        return response
-    ip_address = ip_address.values[0]
-    snapshot, status = get_snapshot(ip_address)
-    if status != 200 or snapshot is None:
-        response = JsonResponse({"message": "Failed to get snapshot"}, status=500)
+        # Support both form POST and JSON POST
+        sig = None
+        if request.content_type == 'application/json':
+            try:
+                body = json.loads(request.body.decode('utf-8'))
+                sig = body.get('sig_id', '').lower()
+            except Exception:
+                sig = ''
+        else:
+            sig = request.POST.get('sig_id', '').lower()
+        print(f"Received sig_id: {sig}")
+        directory = r"L:\TO_Traffic\TMC"
+        complete_intersection = os.path.join(directory, 'TMCGIS/compelete_intersections.csv')
+        df = pd.read_csv(complete_intersection)
+        ip_address = df.loc[df['Signal ID'].astype(str).str.lower() == sig, 'IP Address']
+        if ip_address.empty:
+            response = JsonResponse({"message": "Signal ID not found"}, status=404)
+            response["Access-Control-Allow-Origin"] = "*"
+            response["Access-Control-Allow-Methods"] = "GET, POST, OPTIONS"
+            response["Access-Control-Allow-Headers"] = "Content-Type"
+            return response
+        ip_address = ip_address.values[0]
+        print(f"IP Address: {ip_address}")
+        snapshot, status = get_snapshot(ip_address)
+        print(f"Snapshot status: {status}, Snapshot data: {snapshot is not None}")
+        if not status or snapshot is None:
+            response = JsonResponse({
+                "message": f"Failed to get snapshot from camera at IP {ip_address}. Camera may be offline or unreachable.",
+                "ip": ip_address,
+                "snapshot": None
+            }, status=200)  # Return 200 so frontend can handle gracefully
+            response["Access-Control-Allow-Origin"] = "*"
+            response["Access-Control-Allow-Methods"] = "GET, POST, OPTIONS"
+            response["Access-Control-Allow-Headers"] = "Content-Type"
+            return response
+        # Encode image as base64 string for browser display
+        snapshot_b64 = base64.b64encode(snapshot).decode('utf-8')
+        # You may want to specify the image type, e.g. jpeg
+        data_url = f"data:image/jpeg;base64,{snapshot_b64}"
+        response = JsonResponse({"snapshot": data_url, "message": "ok"}, safe=False)
         response["Access-Control-Allow-Origin"] = "*"
         response["Access-Control-Allow-Methods"] = "GET, POST, OPTIONS"
         response["Access-Control-Allow-Headers"] = "Content-Type"
         return response
-    # Encode image as base64 string for browser display
-    snapshot_b64 = base64.b64encode(snapshot).decode('utf-8')
-    # You may want to specify the image type, e.g. jpeg
-    data_url = f"data:image/jpeg;base64,{snapshot_b64}"
-    response = JsonResponse({"snapshot": data_url, "message": "ok"}, safe=False)
-    response["Access-Control-Allow-Origin"] = "*"
-    response["Access-Control-Allow-Methods"] = "GET, POST, OPTIONS"
-    response["Access-Control-Allow-Headers"] = "Content-Type"
-    return response
+    except Exception as e:
+        import traceback
+        print(f"Error in get_snapshot_view: {e}")
+        print(traceback.format_exc())
+        response = JsonResponse({"message": f"Internal server error: {str(e)}"}, status=500)
+        response["Access-Control-Allow-Origin"] = "*"
+        response["Access-Control-Allow-Methods"] = "GET, POST, OPTIONS"
+        response["Access-Control-Allow-Headers"] = "Content-Type"
+        return response
