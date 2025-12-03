@@ -105,9 +105,7 @@ def get_snapshot_view(request):
             response["Access-Control-Allow-Headers"] = "Content-Type"
             return response
         ip_address = ip_address.values[0]
-        print(f"IP Address: {ip_address}")
         snapshot, status = get_snapshot(ip_address)
-        print(f"Snapshot status: {status}, Snapshot data: {snapshot is not None}")
         if not status or snapshot is None:
             response = JsonResponse({
                 "message": f"Failed to get snapshot from camera at IP {ip_address}. Camera may be offline or unreachable.",

@@ -2,7 +2,8 @@ import pandas as pd
 import json
 import os
 import requests
-
+import time
+from tqdm import tqdm
 def dataframe_to_json(intersections_csv_path: str) -> str:
     """
     Convert a CSV string of intersections into a JSON string.
@@ -100,7 +101,6 @@ def get_snapshot(ip: str, str_format=None):
                 streams_api = json.load(f)
             for vendor_name, vendor_url_format in streams_api.items():
                 url = vendor_url_format.format(ip=ip)
-                print(f"Trying URL: {url}")
                 try:
                     response = requests.get(url, timeout=2)
                     response.raise_for_status()
@@ -126,7 +126,7 @@ def check_noise(image):
     pass
 
 
-def check_all_intersections():
+def get_snapshot_all_intersections(save_path=None):
     """
     Check all intersections from the intersections CSV file and verify their snapshot URLs.
     
@@ -140,28 +140,54 @@ def check_all_intersections():
         'compelete_intersections.csv'
     )
     df = pd.read_csv(intersections_csv_path)
-    df_unique_ids = df.drop_duplicates(subset=['Signal ID'])
-    df_unique_ids = df_unique_ids[(df_unique_ids["Device DNS"].str.contains("tap") | df_unique_ids["Device DNS"].str.contains("ptz"))]
+    df_unique_ids = df[(df["Device DNS"].str.contains("tap") | df["Device DNS"].str.contains("ptz"))]
     streams_api_path = r"L:\TO_Traffic\TMC\TMCGIS\streams_api.json"
     with open(streams_api_path, 'r') as f:
         streams_api = json.load(f)
-    
-    for _, row in df_unique_ids.iterrows():
+    print(f"Total unique intersections to check: {len(df_unique_ids)}")
+    for _, row in tqdm(df_unique_ids.iterrows(), total=len(df_unique_ids), desc="Checking intersections"):
         sig_id = row['Signal ID']
         ip = row['IP Address']
         vendor = row['Vendor'].lower()
-        
         for vendor_name, vendor_url_format in streams_api.items():
+            if "api/v1" in vendor_url_format:
+                for i in range(1, 6):
+                    vendor_url_format_variant = vendor_url_format.replace("api/v1", f"api/v1/cameras/{i}")
+                    snapshot, status = get_snapshot(ip, vendor_url_format_variant)
+                    time.sleep(0.1)  # To avoid overwhelming the network
 
-            snapshot, status = get_snapshot(ip, vendor_url_format)
-            if status == True:
-                results[sig_id] = {
-                    "ip": ip,
-                    "vendor": vendor_name,
-                    "snapshot_url": vendor_url_format.format(ip=ip),
-                    "status": status
-                }
-                break
+                    if status == True:
+                        if save_path:
+                            os.makedirs(save_path, exist_ok=True)
+                            file_path = os.path.join(save_path, f"{sig_id}_{vendor_name}_{i}.jpg")
+                            with open(file_path, 'wb') as img_file:
+                                img_file.write(snapshot)
+                            
+                        results[sig_id] = {
+                            "ip": ip,
+                            "vendor": vendor_name,
+                            "snapshot_url": vendor_url_format_variant.format(ip=ip),
+                            "status": status
+                        }
+                if status == True:
+                    break
+            else:
+                snapshot, status = get_snapshot(ip, vendor_url_format)
+                time.sleep(0.1)  # To avoid overwhelming the network
+                if status == True:
+                    if save_path:
+                        os.makedirs(save_path, exist_ok=True)
+                        file_path = os.path.join(save_path, f"{sig_id}_{vendor_name}.jpg")
+                        with open(file_path, 'wb') as img_file:
+                            img_file.write(snapshot)
+                        
+                    results[sig_id] = {
+                        "ip": ip,
+                        "vendor": vendor_name,
+                        "snapshot_url": vendor_url_format.format(ip=ip),
+                        "status": status
+                    }
+                    break
     
     return results
 

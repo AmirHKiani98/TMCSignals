@@ -1,7 +1,7 @@
 import json
 import os
 from django.test import TestCase
-from .utils import dataframe_to_json
+from .utils import dataframe_to_json, get_snapshot, get_snapshot_all_intersections
 
 
 class APITestCase(TestCase):
@@ -86,5 +86,5 @@ class APITestCase(TestCase):
     
     def test_collect_all_images(self):
         """Test that all images are collected for a given signal ID."""
+        get_snapshot_all_intersections(save_path=r"SnapshotsTest")
         
-
