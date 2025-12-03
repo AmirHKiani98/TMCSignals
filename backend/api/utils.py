@@ -100,7 +100,7 @@ def get_snapshot(ip: str, str_format=None):
                 streams_api = json.load(f)
             for vendor_name, vendor_url_format in streams_api.items():
                 url = vendor_url_format.format(ip=ip)
-                print("Checking", url)
+                print(f"Trying URL: {url}")
                 try:
                     response = requests.get(url, timeout=2)
                     response.raise_for_status()
@@ -141,7 +141,7 @@ def check_all_intersections():
     )
     df = pd.read_csv(intersections_csv_path)
     df_unique_ids = df.drop_duplicates(subset=['Signal ID'])
-    
+    df_unique_ids = df_unique_ids[(df_unique_ids["Device DNS"].str.contains("tap") | df_unique_ids["Device DNS"].str.contains("ptz"))]
     streams_api_path = r"L:\TO_Traffic\TMC\TMCGIS\streams_api.json"
     with open(streams_api_path, 'r') as f:
         streams_api = json.load(f)

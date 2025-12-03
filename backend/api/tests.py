@@ -83,4 +83,8 @@ class APITestCase(TestCase):
             self.assertIsNotNone(record.get('Name'))
             self.assertIsNotNone(record.get('long'))
             self.assertIsNotNone(record.get('lat'))
+    
+    def test_collect_all_images(self):
+        """Test that all images are collected for a given signal ID."""
+        
 

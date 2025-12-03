@@ -96,7 +96,8 @@ def get_snapshot_view(request):
         directory = r"L:\TO_Traffic\TMC"
         complete_intersection = os.path.join(directory, 'TMCGIS/compelete_intersections.csv')
         df = pd.read_csv(complete_intersection)
-        ip_address = df.loc[df['Signal ID'].astype(str).str.lower() == sig, 'IP Address']
+        ip_address = df.loc[(df['Signal ID'].astype(str).str.lower() == sig) & (df["Device DNS"].str.contains("tap") | df["Device DNS"].str.contains("ptz")), 'IP Address']
+
         if ip_address.empty:
             response = JsonResponse({"message": "Signal ID not found"}, status=404)
             response["Access-Control-Allow-Origin"] = "*"
