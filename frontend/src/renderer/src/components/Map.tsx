@@ -160,13 +160,26 @@ export default function Map() {
                                 <div className='flex flex-col justify-center gap-1'>
                                     <strong>{sig["Intersection Name"]}</strong>
                                     <div>
-                                        <ul className='p-2.5'>
-                                            {additionalInfo && Object.entries(additionalInfo).map(([key, value]) => (
-                                                <li key={key}>
-                                                    <strong>{key}:</strong> {String(value)}
-                                                </li>
-                                            ))}
-                                        </ul>
+                                        <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                                            <tbody>
+                                                {additionalInfo && Object.entries(additionalInfo).map(([key, value], index) => (
+                                                    <tr
+                                                        key={key}
+                                                        style={{
+                                                            backgroundColor: index % 2 === 0 ? '#90caf9' : '#ffffff',
+                                                            color: index % 2 === 0 ? '#ffffff' : '#000000',
+                                                        }}
+                                                    >
+                                                        <td style={{ padding: '8px', fontWeight: 'bold', textAlign: 'left' }}>
+                                                            {key}
+                                                        </td>
+                                                        <td style={{ padding: '8px', textAlign: 'right' }}>
+                                                            {String(value)}
+                                                        </td>
+                                                    </tr>
+                                                ))}
+                                            </tbody>
+                                        </table>
                                         <ul className='p-2.5'>
                                             {fileSearchResults &&
                                                 Object.entries(fileSearchResults).map(([key, files]) => (
