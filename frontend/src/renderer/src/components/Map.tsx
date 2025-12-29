@@ -49,6 +49,7 @@ export default function Map() {
     const handleMarkerClick = (_e: any, signalId: string | null) => {
         setLoading(true);
         setFileSearchResults({});
+        setAdditionalInfo({});
         const urlAdditionalInfo = `http://localhost:8811/api/get_additional_info/`;
         fetch(urlAdditionalInfo, {
             method: 'POST',
