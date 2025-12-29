@@ -3,7 +3,7 @@ import json
 import base64
 import pandas as pd
 from django.http import JsonResponse, HttpResponse
-from .utils import dataframe_to_json, find_file, find_files_live, get_snapshot, get_additional_info
+from .utils import dataframe_to_json, find_file, find_files_live, get_snapshot, get_additional_info_from_sig
 from django.views.decorators.csrf import csrf_exempt
 from threading import Thread
 # Create your views here.
@@ -50,7 +50,7 @@ def find_file_live_view(request, sig_id):
     sig_id = sig_id.lower()
     directory = r"L:\TO_Traffic\TMC"
     search_folder_path = os.path.join(directory, "TMCGIS/search_folders.json")
-    addition_info = get_additional_info(sig_id)
+    addition_info = get_additional_info_from_sig(sig_id)
     with open(search_folder_path, 'r') as f:
         search_folders = json.load(f)
     # Thread on find_files_live
@@ -138,6 +138,16 @@ def get_snapshot_view(request):
 
 @csrf_exempt
 def get_additional_info(request):
+    if request.method == "OPTIONS":
+        response = HttpResponse()
+        response.status_code = 200
+        response["Access-Control-Allow-Origin"] = "*"
+        response["Access-Control-Allow-Methods"] = "GET, POST, OPTIONS"
+        response["Access-Control-Allow-Headers"] = "Content-Type"
+        response["Content-Length"] = "0"
+        response["Content-Type"] = "application/json"
+        return response
+    
     if request.method != 'POST':
         response = JsonResponse({"message": "Method not allowed"}, status=405)
         response["Access-Control-Allow-Origin"] = "*"
@@ -145,8 +155,18 @@ def get_additional_info(request):
         response["Access-Control-Allow-Headers"] = "Content-Type"
         return response
 
-    sig_id = request.POST.get('sig_id', '').lower()
-    addition_info = get_additional_info(sig_id)
+    # Support both form POST and JSON POST
+    sig_id = None
+    if request.content_type == 'application/json':
+        try:
+            body = json.loads(request.body.decode('utf-8'))
+            sig_id = body.get('sig_id', '').lower()
+        except Exception:
+            sig_id = ''
+    else:
+        sig_id = request.POST.get('sig_id', '').lower()
+    
+    addition_info = get_additional_info_from_sig(sig_id)
     response = JsonResponse({"additional_info": addition_info, "message": "ok"}, safe=False)
     response["Access-Control-Allow-Origin"] = "*"
     response["Access-Control-Allow-Methods"] = "GET, POST, OPTIONS"

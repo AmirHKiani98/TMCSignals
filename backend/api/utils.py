@@ -192,7 +192,7 @@ def get_snapshot_all_intersections(save_path=None):
     return results
 
 
-def get_additional_info(sig_id: str) -> dict:
+def get_additional_info_from_sig(sig_id: str) -> dict:
     """
     Retrieve additional information for a given signal ID from the intersections CSV file.
     
@@ -208,14 +208,40 @@ def get_additional_info(sig_id: str) -> dict:
     )
     df = pd.read_csv(intersections_csv_path)
     match = df[df["Signal ID"].astype(str) == str(sig_id)]
-    # Return the first one that has additional info not empty as {}
+    print(f"Found {len(match)} entries for Signal ID: {sig_id}")
+    
+    # Return the first row that has additional info not empty as {}
     if not match.empty:
         for _, row in match.iterrows():
-            additional_info = row.get("addition_info", {})
-            if isinstance(additional_info, str):
+            # Check if the column exists, handle both 'addition_info' and similar names
+            additional_info = None
+            for col in ['addition_info', 'additional_info', 'Additional Info']:
+                if col in row.index:
+                    additional_info = row[col]
+                    break
+            
+            # If not found in any column, return empty dict
+            if additional_info is None or (isinstance(additional_info, float) and pd.isna(additional_info)):
+                additional_info = {}
+            elif isinstance(additional_info, dict):
+                # Already a dict, use it directly
+                pass
+            elif isinstance(additional_info, str):
                 try:
+                    print(f"Parsing additional_info for Signal ID {sig_id}: {additional_info}")
                     additional_info = json.loads(additional_info)
-                except json.JSONDecodeError:
-                    additional_info = {}
+                except json.JSONDecodeError as e:
+                    print(f"Failed to parse additional_info for Signal ID {sig_id}: {e}")
+                    print(f"Content type: {type(additional_info)}, Content: {additional_info}")
+                    # Try to evaluate as Python literal (dict with single quotes)
+                    try:
+                        additional_info = eval(additional_info)
+                    except Exception as eval_err:
+                        print(f"Failed to evaluate as Python literal: {eval_err}")
+                        additional_info = {}
+            
             if additional_info:
                 return additional_info
+    
+    # Return empty dict if no match found
+    return {}

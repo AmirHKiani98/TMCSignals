@@ -59,7 +59,7 @@ export default function Map() {
         })
         .then(response => response.json())
         .then(data => {
-            console.log('Additional info data:', data);
+            console.log('Additional info data:', signalId, data);
             setAdditionalInfo(data.additional_info);
         })
         .catch(error => {
