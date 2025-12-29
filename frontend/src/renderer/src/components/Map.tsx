@@ -15,6 +15,7 @@ export default function Map() {
     const [loading, setLoading] = react.useState<boolean>(false)
     const [fileSearchResults, setFileSearchResults] = react.useState<Record<string, string[]>>({});
     const [snapShotImage, setSnapShotImage] = react.useState<string | null>(null);
+    const [additionalInfo, setAdditionalInfo] = react.useState<any>({});
     react.useEffect(() => {
         fetch('http://localhost:8811/api/get_intersections/')
             .then(response => response.json())
@@ -48,6 +49,23 @@ export default function Map() {
     const handleMarkerClick = (_e: any, signalId: string | null) => {
         setLoading(true);
         setFileSearchResults({});
+        const urlAdditionalInfo = `http://localhost:8811/api/get_additional_info/`;
+        fetch(urlAdditionalInfo, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ sig_id: signalId })
+        })
+        .then(response => response.json())
+        .then(data => {
+            console.log('Additional info data:', data);
+            setAdditionalInfo(data.additional_info);
+        })
+        .catch(error => {
+            console.error('Error fetching additional info:', error);
+        });
+
 
         const ws = new WebSocket(`ws://localhost:8811/ws/find_file/${signalId}/`);
         
@@ -142,6 +160,13 @@ export default function Map() {
                                 <div className='flex flex-col justify-center gap-1'>
                                     <strong>{sig["Intersection Name"]}</strong>
                                     <div>
+                                        <ul className='p-2.5'>
+                                            {additionalInfo && Object.entries(additionalInfo).map(([key, value]) => (
+                                                <li key={key}>
+                                                    <strong>{key}:</strong> {String(value)}
+                                                </li>
+                                            ))}
+                                        </ul>
                                         <ul className='p-2.5'>
                                             {fileSearchResults &&
                                                 Object.entries(fileSearchResults).map(([key, files]) => (

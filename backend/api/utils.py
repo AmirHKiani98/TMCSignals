@@ -191,3 +191,31 @@ def get_snapshot_all_intersections(save_path=None):
     
     return results
 
+
+def get_additional_info(sig_id: str) -> dict:
+    """
+    Retrieve additional information for a given signal ID from the intersections CSV file.
+    
+    Args:
+        sig_id (str): The signal ID to look up.
+    Returns:
+        dict: A dictionary of additional information for the signal ID.
+    """
+    intersections_csv_path = os.path.join(
+       r"L:\TO_Traffic\TMC",
+        'TMCGIS',
+        'compelete_intersections.csv'
+    )
+    df = pd.read_csv(intersections_csv_path)
+    match = df[df["Signal ID"].astype(str) == str(sig_id)]
+    # Return the first one that has additional info not empty as {}
+    if not match.empty:
+        for _, row in match.iterrows():
+            additional_info = row.get("addition_info", {})
+            if isinstance(additional_info, str):
+                try:
+                    additional_info = json.loads(additional_info)
+                except json.JSONDecodeError:
+                    additional_info = {}
+            if additional_info:
+                return additional_info

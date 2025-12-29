@@ -3,9 +3,8 @@ import json
 import base64
 import pandas as pd
 from django.http import JsonResponse, HttpResponse
-from .utils import dataframe_to_json, find_file, find_files_live, get_snapshot
+from .utils import dataframe_to_json, find_file, find_files_live, get_snapshot, get_additional_info
 from django.views.decorators.csrf import csrf_exempt
-from django.http import StreamingHttpResponse
 from threading import Thread
 # Create your views here.
 
@@ -51,12 +50,13 @@ def find_file_live_view(request, sig_id):
     sig_id = sig_id.lower()
     directory = r"L:\TO_Traffic\TMC"
     search_folder_path = os.path.join(directory, "TMCGIS/search_folders.json")
+    addition_info = get_additional_info(sig_id)
     with open(search_folder_path, 'r') as f:
         search_folders = json.load(f)
     # Thread on find_files_live
     thread = Thread(target=find_files_live, args=(sig_id, search_folders))
     thread.start()
-    response = JsonResponse({"message": "File search started"}, safe=False)
+    response = JsonResponse({"message": "File search started", "additional_info": addition_info}, safe=False)
     response["Access-Control-Allow-Origin"] = "*"
     response["Access-Control-Allow-Methods"] = "GET, POST, OPTIONS"
     response["Access-Control-Allow-Headers"] = "Content-Type"
@@ -134,3 +134,21 @@ def get_snapshot_view(request):
         response["Access-Control-Allow-Methods"] = "GET, POST, OPTIONS"
         response["Access-Control-Allow-Headers"] = "Content-Type"
         return response
+
+
+@csrf_exempt
+def get_additional_info(request):
+    if request.method != 'POST':
+        response = JsonResponse({"message": "Method not allowed"}, status=405)
+        response["Access-Control-Allow-Origin"] = "*"
+        response["Access-Control-Allow-Methods"] = "GET, POST, OPTIONS"
+        response["Access-Control-Allow-Headers"] = "Content-Type"
+        return response
+
+    sig_id = request.POST.get('sig_id', '').lower()
+    addition_info = get_additional_info(sig_id)
+    response = JsonResponse({"additional_info": addition_info, "message": "ok"}, safe=False)
+    response["Access-Control-Allow-Origin"] = "*"
+    response["Access-Control-Allow-Methods"] = "GET, POST, OPTIONS"
+    response["Access-Control-Allow-Headers"] = "Content-Type"
+    return response
