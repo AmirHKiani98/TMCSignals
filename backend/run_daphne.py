@@ -1,9 +1,12 @@
 import subprocess
+import sys
 from watchgod import run_process
 
 def run():
     # Start Daphne as a subprocess and wait for it to finish
-    proc = subprocess.Popen(['daphne', 'processor.asgi:application', '--port', '8811'])
+    # Use the current Python executable to run daphne as a module so we don't
+    # rely on an activated shell or PATH having the 'daphne' console script.
+    proc = subprocess.Popen([sys.executable, '-m', 'daphne', 'processor.asgi:application', '--port', '8811'])
     try:
         proc.wait()
     finally:
