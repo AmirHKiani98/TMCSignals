@@ -2,11 +2,29 @@ import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet'
 import 'leaflet/dist/leaflet.css'
 import react from 'react'
 import { Map as LeafletMap } from 'leaflet'
+import L from 'leaflet'
 import {TitleOverlay, Sig} from './TitleOverlay'
 
 import { CircularProgress } from '@mui/material';
 
+// Create custom icons
+const defaultIcon = new L.Icon({
+    iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-blue.png',
+    shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.7/images/marker-shadow.png',
+    iconSize: [25, 41],
+    iconAnchor: [12, 41],
+    popupAnchor: [1, -34],
+    shadowSize: [41, 41]
+});
 
+const selectedIcon = new L.Icon({
+    iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-red.png',
+    shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.7/images/marker-shadow.png',
+    iconSize: [25, 41],
+    iconAnchor: [12, 41],
+    popupAnchor: [1, -34],
+    shadowSize: [41, 41]
+});
 
 export default function Map() {
     const [sigs, setSigs] = react.useState<Sig[]>([]);
@@ -16,6 +34,7 @@ export default function Map() {
     const [fileSearchResults, setFileSearchResults] = react.useState<Record<string, string[]>>({});
     const [snapShotImage, setSnapShotImage] = react.useState<string | null>(null);
     const [additionalInfo, setAdditionalInfo] = react.useState<any>({});
+    
     react.useEffect(() => {
         fetch('http://localhost:8811/api/get_intersections/')
             .then(response => response.json())
@@ -46,7 +65,8 @@ export default function Map() {
         }
     };
 
-    const handleMarkerClick = (_e: any, signalId: string | null) => {
+    const handleMarkerClick = (e: any, sig: Sig, signalId: string | null) => {
+        setSelectedSig(sig);
         setLoading(true);
         setFileSearchResults({});
         setAdditionalInfo({});
@@ -117,7 +137,7 @@ export default function Map() {
     react.useEffect(() => {
         console.log('Effect triggered: mapInst or selectedSig changed', { mapInst, selectedSig });
         if (mapInst && selectedSig) {
-            const Latitutde = Number(selectedSig.Latitutde);
+            const Latitutde = Number(selectedSig.Latitude);
             const lng = Number(selectedSig.Longitude);
             
             if (Number.isFinite(Latitutde) && Number.isFinite(lng)) {
@@ -147,13 +167,15 @@ export default function Map() {
                     return Number.isFinite(lat) && Number.isFinite(lng);
                 }).map((sig, index) => {
                     const sigId = String(sig["Signal ID"]);
+                    const isSelected = selectedSig && String(selectedSig["Signal ID"]) === sigId;
                     return (
                         <Marker
                             key={index}
                             position={[sig["Latitude"], sig["Longitude"]]}
+                            icon={isSelected ? selectedIcon : defaultIcon}
                             eventHandlers={{
                                 click: (e) => {
-                                    handleMarkerClick(e, sigId);
+                                    handleMarkerClick(e, sig, sigId);
                                 }
                             }}
                         >
