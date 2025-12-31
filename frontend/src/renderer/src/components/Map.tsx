@@ -43,6 +43,7 @@ export default function Map() {
                 const items: Sig[] = Array.isArray(data.data) ? data.data : [];
                 // filter those ones that have lattitude and longitude defined
                 const filtered = items.filter((it: any) => it.Latitude != null && it.Longitude != null && !isNaN(Number(it.Latitude)) && !isNaN(Number(it.Longitude)));
+                console.log(filtered);
                 setSigs(filtered)
             })
             .catch(error => {
@@ -65,7 +66,7 @@ export default function Map() {
         }
     };
 
-    const handleMarkerClick = (e: any, sig: Sig, signalId: string | null) => {
+    const handleMarkerClick = (_: any, sig: Sig, signalId: string | null) => {
         setSelectedSig(sig);
         setLoading(true);
         setFileSearchResults({});
