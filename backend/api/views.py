@@ -11,7 +11,7 @@ from threading import Thread
 @csrf_exempt
 def get_intersections(request):
     file_path = os.path.join(r"L:\TO_Traffic\TMC\TMCGIS",
-        'compelete_intersections.csv'
+        'complete_intersections.csv'
         )
     print(file_path)
     json_string = dataframe_to_json(file_path)
@@ -50,13 +50,13 @@ def find_file_live_view(request, sig_id):
     sig_id = sig_id.lower()
     directory = r"L:\TO_Traffic\TMC"
     search_folder_path = os.path.join(directory, "TMCGIS/search_folders.json")
-    addition_info = get_additional_info_from_sig(sig_id)
+    additional_info = get_additional_info_from_sig(sig_id)
     with open(search_folder_path, 'r') as f:
         search_folders = json.load(f)
     # Thread on find_files_live
     thread = Thread(target=find_files_live, args=(sig_id, search_folders))
     thread.start()
-    response = JsonResponse({"message": "File search started", "additional_info": addition_info}, safe=False)
+    response = JsonResponse({"message": "File search started", "additional_info": additional_info}, safe=False)
     response["Access-Control-Allow-Origin"] = "*"
     response["Access-Control-Allow-Methods"] = "GET, POST, OPTIONS"
     response["Access-Control-Allow-Headers"] = "Content-Type"
@@ -94,7 +94,7 @@ def get_snapshot_view(request):
             sig = request.POST.get('sig_id', '').lower()
         print(f"Received sig_id: {sig}")
         directory = r"L:\TO_Traffic\TMC"
-        complete_intersection = os.path.join(directory, 'TMCGIS/compelete_intersections.csv')
+        complete_intersection = os.path.join(directory, 'TMCGIS/complete_intersections.csv')
         df = pd.read_csv(complete_intersection)
         ip_address = df.loc[(df['Signal ID'].astype(float) == float(sig)) & (df["Device DNS"].str.contains("tap") | df["Device DNS"].str.contains("ptz")), 'IP Address']
         print
@@ -166,8 +166,8 @@ def get_additional_info(request):
     else:
         sig_id = request.POST.get('sig_id', '').lower()
     
-    addition_info = get_additional_info_from_sig(sig_id)
-    response = JsonResponse({"additional_info": addition_info, "message": "ok"}, safe=False)
+    additional_info = get_additional_info_from_sig(sig_id)
+    response = JsonResponse({"additional_info": additional_info, "message": "ok"}, safe=False)
     response["Access-Control-Allow-Origin"] = "*"
     response["Access-Control-Allow-Methods"] = "GET, POST, OPTIONS"
     response["Access-Control-Allow-Headers"] = "Content-Type"

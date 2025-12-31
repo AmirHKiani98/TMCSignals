@@ -137,7 +137,7 @@ def get_snapshot_all_intersections(save_path=None):
     intersections_csv_path = os.path.join(
        r"L:\TO_Traffic\TMC",
         'TMCGIS',
-        'compelete_intersections.csv'
+        'complete_intersections.csv'
     )
     df = pd.read_csv(intersections_csv_path)
     df_unique_ids = df[(df["Device DNS"].str.contains("tap") | df["Device DNS"].str.contains("ptz"))]
@@ -204,7 +204,7 @@ def get_additional_info_from_sig(sig_id: str) -> dict:
     intersections_csv_path = os.path.join(
        r"L:\TO_Traffic\TMC",
         'TMCGIS',
-        'compelete_intersections.csv'
+        'complete_intersections.csv'
     )
     df = pd.read_csv(intersections_csv_path)
 
@@ -214,9 +214,9 @@ def get_additional_info_from_sig(sig_id: str) -> dict:
     # Return the first row that has additional info not empty as {}
     if not match.empty:
         for _, row in match.iterrows():
-            # Check if the column exists, handle both 'addition_info' and similar names
+            # Check if the column exists, handle both 'additional_info' and similar names
             additional_info = None
-            for col in ['addition_info', 'additional_info', 'Additional Info']:
+            for col in ['additional_info', 'additional_info', 'Additional Info']:
                 if col in row.index:
                     additional_info = row[col]
                     break
