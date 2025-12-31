@@ -87,4 +87,13 @@ class APITestCase(TestCase):
     def test_collect_all_images(self):
         """Test that all images are collected for a given signal ID."""
         get_snapshot_all_intersections(save_path=r"SnapshotsTest")
+    
+    def test_get_additional_info_from_sig(self):
+        """Test retrieval of additional info from signal ID."""
+        from .utils import get_additional_info_from_sig
+        
+        sig_id = "8036300"
+        additional_info = get_additional_info_from_sig(sig_id)
+        print(f"Additional info for Signal ID {sig_id}: {additional_info}")
+        self.assertIsInstance(additional_info, dict)
         

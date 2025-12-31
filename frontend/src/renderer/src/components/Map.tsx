@@ -111,6 +111,7 @@ export default function Map() {
             ws.close();
         }
         // Fetch snapshot image
+        console.log(signalId)
         fetch(`http://localhost:8811/api/get-snapshot/`, {
             method: 'POST',
             headers: {

@@ -207,8 +207,9 @@ def get_additional_info_from_sig(sig_id: str) -> dict:
         'compelete_intersections.csv'
     )
     df = pd.read_csv(intersections_csv_path)
-    match = df[df["Signal ID"].astype(str) == str(sig_id)]
-    print(f"Found {len(match)} entries for Signal ID: {sig_id}")
+
+    match = df[df["Signal ID"].astype(float) == float(sig_id)]
+
     
     # Return the first row that has additional info not empty as {}
     if not match.empty:
