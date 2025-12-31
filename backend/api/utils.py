@@ -213,36 +213,26 @@ def get_additional_info_from_sig(sig_id: str) -> dict:
     
     # Return the first row that has additional info not empty as {}
     if not match.empty:
+        # we need "IP Address" column and any column after column "Longitude" as an additional info
+        # Check for none value and return the first one that is None
+        # Get Longitude column index and get all columns after that
+        additional_info = {}
+        longitude_index = match.columns.get_loc("Latitude")
         for _, row in match.iterrows():
-            # Check if the column exists, handle both 'additional_info' and similar names
-            additional_info = None
-            for col in ['additional_info', 'additional_info', 'Additional Info']:
-                if col in row.index:
-                    additional_info = row[col]
-                    break
+            ip_address = row["IP Address"]
+            if pd.notna(ip_address):
+                additional_info["IP Address"] = ip_address
+            for col in match.columns[longitude_index + 1:]:
+                value = row[col]
+                if pd.notna(value):
+                    additional_info[col] = value
+        
+        return additional_info
+        
             
-            # If not found in any column, return empty dict
-            if additional_info is None or (isinstance(additional_info, float) and pd.isna(additional_info)):
-                additional_info = {}
-            elif isinstance(additional_info, dict):
-                # Already a dict, use it directly
-                pass
-            elif isinstance(additional_info, str):
-                try:
-                    print(f"Parsing additional_info for Signal ID {sig_id}: {additional_info}")
-                    additional_info = json.loads(additional_info)
-                except json.JSONDecodeError as e:
-                    print(f"Failed to parse additional_info for Signal ID {sig_id}: {e}")
-                    print(f"Content type: {type(additional_info)}, Content: {additional_info}")
-                    # Try to evaluate as Python literal (dict with single quotes)
-                    try:
-                        additional_info = eval(additional_info)
-                    except Exception as eval_err:
-                        print(f"Failed to evaluate as Python literal: {eval_err}")
-                        additional_info = {}
-            
-            if additional_info:
-                return additional_info
+        
+    else:
+        return {}
     
     # Return empty dict if no match found
     return {}
